@@ -7,6 +7,7 @@ A command-line tool and API for managing skills and generating prompts with skil
 - **N-Tier Architecture**: Clean separation of concerns with Core, Infrastructure, API, and CLI layers
 - **Skill Management**: Full CRUD operations for managing skills via CLI or API
 - **Prompt Generation**: Create prompts with optional skill integration
+- **Git Integration**: Clone repositories and extract their contents for LLM analysis
 - **Clipboard Integration**: Automatically copy prompts to clipboard for easy LLM interaction
 - **Persistent Storage**: SQLite database stored in user folder for persistence across upgrades
 - **RESTful API**: Production-grade API with Swagger documentation
@@ -94,6 +95,23 @@ dotnet run -- prompt "Create a REST API" --skills 1 2
 dotnet run -- prompt "Create a REST API" -s 1 2
 ```
 
+#### Create a prompt with Git repository integration
+```bash
+dotnet run -- prompt "Analyze this code" --git-repo https://github.com/user/repo
+# or short form:
+dotnet run -- prompt "Analyze this code" -g https://github.com/user/repo
+
+# Multiple repositories
+dotnet run -- prompt "Compare these projects" -g https://github.com/user/repo1 https://github.com/user/repo2
+```
+
+When using the `--git-repo` option, the repositories will be cloned to the current directory and their contents will be written to a `repository-contents.txt` file that can be uploaded to an LLM along with your prompt.
+
+#### Combine skills and repositories
+```bash
+dotnet run -- prompt "Review this code" -s 1 2 -g https://github.com/user/repo
+```
+
 The prompt will be copied to your clipboard and displayed in the console, including the specified skills.
 
 ## API Endpoints
@@ -131,6 +149,7 @@ This ensures your skills persist across application upgrades.
 - **System.CommandLine**: Modern command-line interface
 - **Entity Framework Core**: ORM for database operations
 - **SQLite**: Lightweight, file-based database
+- **LibGit2Sharp**: Git repository operations and cloning
 - **Swashbuckle/Swagger**: API documentation
 - **Microsoft Extensions**: Dependency injection, logging, configuration
 - **TextCopy**: Cross-platform clipboard operations
