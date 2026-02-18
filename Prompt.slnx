@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Prompt.Api/Prompt.Api.csproj" />
+    <Project Path="src/Prompt.Cli/Prompt.Cli.csproj" />
+    <Project Path="src/Prompt.Core/Prompt.Core.csproj" />
+    <Project Path="src/Prompt.Infrastructure/Prompt.Infrastructure.csproj" />
+  </Folder>
+</Solution>
