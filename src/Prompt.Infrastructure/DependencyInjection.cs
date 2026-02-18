@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Prompt.Core.Interfaces;
 using Prompt.Infrastructure.Data;
 using Prompt.Infrastructure.Repositories;
+using Prompt.Infrastructure.Services;
 
 namespace Prompt.Infrastructure;
 
@@ -14,6 +15,7 @@ public static class DependencyInjection
             options.UseSqlite(connectionString));
 
         services.AddScoped<ISkillRepository, SkillRepository>();
+        services.AddScoped<IGitService, GitService>();
 
         return services;
     }

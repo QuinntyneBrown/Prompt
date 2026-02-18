@@ -34,6 +34,7 @@ using (var scope = serviceProvider.CreateScope())
 }
 
 var skillRepository = serviceProvider.GetRequiredService<ISkillRepository>();
+var gitService = serviceProvider.GetRequiredService<IGitService>();
 
 // Create root command
 var rootCommand = new RootCommand("Prompt CLI - Manage skills and generate prompts");
@@ -45,9 +46,14 @@ var skillsOption = new Option<int[]>("--skills", () => Array.Empty<int>(), "Skil
 skillsOption.AddAlias("-s");
 skillsOption.AllowMultipleArgumentsPerToken = true;
 
+var gitRepoOption = new Option<string[]>("--git-repo", () => Array.Empty<string>(), "Git repository URLs to clone");
+gitRepoOption.AddAlias("-g");
+gitRepoOption.AllowMultipleArgumentsPerToken = true;
+
 promptCommand.AddArgument(promptArgument);
 promptCommand.AddOption(skillsOption);
-promptCommand.SetHandler(async (string prompt, int[] skills) =>
+promptCommand.AddOption(gitRepoOption);
+promptCommand.SetHandler(async (string prompt, int[] skills, string[] gitRepos) =>
 {
     try
     {
@@ -65,6 +71,39 @@ promptCommand.SetHandler(async (string prompt, int[] skills) =>
                 }
             }
             output += skillsSection;
+        }
+
+        // Handle git repositories
+        if (gitRepos != null && gitRepos.Length > 0)
+        {
+            var currentDirectory = Directory.GetCurrentDirectory();
+            var repoContents = new List<string>();
+
+            foreach (var repoUrl in gitRepos)
+            {
+                try
+                {
+                    Console.WriteLine($"Cloning repository: {repoUrl}...");
+                    var clonedPath = await gitService.CloneRepositoryAsync(repoUrl, currentDirectory);
+                    Console.WriteLine($"✓ Repository cloned to: {clonedPath}");
+
+                    // Read repository contents and add to output
+                    var repoContent = await ReadRepositoryContentsAsync(clonedPath);
+                    repoContents.Add(repoContent);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"✗ Failed to clone {repoUrl}: {ex.Message}");
+                }
+            }
+
+            // Write repository contents to a text file
+            if (repoContents.Any())
+            {
+                var outputFileName = Path.Combine(currentDirectory, "repository-contents.txt");
+                await File.WriteAllTextAsync(outputFileName, string.Join("\n\n" + new string('=', 80) + "\n\n", repoContents));
+                Console.WriteLine($"✓ Repository contents written to: {outputFileName}");
+            }
         }
 
         try
@@ -86,7 +125,7 @@ promptCommand.SetHandler(async (string prompt, int[] skills) =>
     {
         Console.WriteLine($"Error: {ex.Message}");
     }
-}, promptArgument, skillsOption);
+}, promptArgument, skillsOption, gitRepoOption);
 
 rootCommand.AddCommand(promptCommand);
 
@@ -235,6 +274,42 @@ deleteCommand.SetHandler(async (int id) =>
 skillCommand.AddCommand(deleteCommand);
 
 rootCommand.AddCommand(skillCommand);
+
+// Helper function to read repository contents
+static async Task<string> ReadRepositoryContentsAsync(string repositoryPath)
+{
+    var output = new System.Text.StringBuilder();
+    var repoName = Path.GetFileName(repositoryPath);
+    
+    output.AppendLine($"Repository: {repoName}");
+    output.AppendLine($"Path: {repositoryPath}");
+    output.AppendLine();
+    
+    // Read all text files in the repository
+    var textExtensions = new[] { ".cs", ".txt", ".md", ".json", ".yml", ".yaml", ".xml", ".config", ".js", ".ts", ".py", ".java", ".go", ".rs", ".cpp", ".h", ".html", ".css" };
+    var files = Directory.GetFiles(repositoryPath, "*.*", SearchOption.AllDirectories)
+        .Where(f => !f.Contains("/.git/") && !f.Contains("\\.git\\"))
+        .Where(f => textExtensions.Contains(Path.GetExtension(f).ToLower()))
+        .OrderBy(f => f);
+    
+    foreach (var file in files)
+    {
+        try
+        {
+            var relativePath = Path.GetRelativePath(repositoryPath, file);
+            output.AppendLine($"--- File: {relativePath} ---");
+            var content = await File.ReadAllTextAsync(file);
+            output.AppendLine(content);
+            output.AppendLine();
+        }
+        catch (Exception ex)
+        {
+            output.AppendLine($"Error reading {file}: {ex.Message}");
+        }
+    }
+    
+    return output.ToString();
+}
 
 // Execute
 return await rootCommand.InvokeAsync(args);
