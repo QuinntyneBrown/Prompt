@@ -100,7 +100,8 @@ promptCommand.SetHandler(async (string prompt, int[] skills, string[] gitRepos) 
             // Write repository contents to a text file
             if (repoContents.Any())
             {
-                var outputFileName = Path.Combine(currentDirectory, "repository-contents.txt");
+                var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                var outputFileName = Path.Combine(currentDirectory, $"repository-contents-{timestamp}.txt");
                 await File.WriteAllTextAsync(outputFileName, string.Join("\n\n" + new string('=', 80) + "\n\n", repoContents));
                 Console.WriteLine($"✓ Repository contents written to: {outputFileName}");
             }
@@ -287,8 +288,9 @@ static async Task<string> ReadRepositoryContentsAsync(string repositoryPath)
     
     // Read all text files in the repository
     var textExtensions = new[] { ".cs", ".txt", ".md", ".json", ".yml", ".yaml", ".xml", ".config", ".js", ".ts", ".py", ".java", ".go", ".rs", ".cpp", ".h", ".html", ".css" };
+    var gitPath = Path.Combine(repositoryPath, ".git");
     var files = Directory.GetFiles(repositoryPath, "*.*", SearchOption.AllDirectories)
-        .Where(f => !f.Contains("/.git/") && !f.Contains("\\.git\\"))
+        .Where(f => !f.StartsWith(gitPath, StringComparison.OrdinalIgnoreCase))
         .Where(f => textExtensions.Contains(Path.GetExtension(f).ToLower()))
         .OrderBy(f => f);
     

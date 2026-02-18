@@ -5,22 +5,25 @@ namespace Prompt.Infrastructure.Services;
 
 public class GitService : IGitService
 {
-    public async Task<string> CloneRepositoryAsync(string repositoryUrl, string outputPath)
+    public Task<string> CloneRepositoryAsync(string repositoryUrl, string outputPath)
     {
-        return await Task.Run(() =>
+        try
         {
             var clonePath = Path.Combine(outputPath, GetRepositoryName(repositoryUrl));
             
-            // If directory already exists, remove it to do a fresh clone
-            if (Directory.Exists(clonePath))
-            {
-                Directory.Delete(clonePath, true);
-            }
-
+            // Clone the repository (LibGit2Sharp will fail if directory exists)
             Repository.Clone(repositoryUrl, clonePath);
             
-            return clonePath;
-        });
+            return Task.FromResult(clonePath);
+        }
+        catch (UriFormatException)
+        {
+            throw new ArgumentException($"Invalid repository URL format: {repositoryUrl}", nameof(repositoryUrl));
+        }
+        catch (NameConflictException)
+        {
+            throw new InvalidOperationException($"A directory already exists at the target location. Please remove it first or use a different location.");
+        }
     }
 
     private string GetRepositoryName(string repositoryUrl)
