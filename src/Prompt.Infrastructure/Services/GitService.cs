@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using QuinntyneBrown.Git.Core;
 using Prompt.Core.Interfaces;
 
 namespace Prompt.Infrastructure.Services;
